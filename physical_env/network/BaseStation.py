@@ -1,6 +1,6 @@
 from scipy.spatial.distance import euclidean
 import numpy as np
-
+ 
 class BaseStation:
     def __init__(self, location):
         """
