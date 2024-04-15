@@ -10,6 +10,7 @@ node_phy_spe:
   sen_range: 40
   threshold: 540
 seed: 0
+max_time: 604800
 Rc: 80
 Rs: 40
 base_station:

@@ -8,7 +8,7 @@ class Network:
         self.listTargets = listTargets
         self.targets_active = [1 for _ in range(len(self.listTargets))]
         self.alive = 1
-        # Setting BS and Node environment and network
+
         baseStation.env = self.env
         baseStation.net = self
         self.max_time = max_time
@@ -32,7 +32,6 @@ class Network:
             target.id = it
             it += 1
          
-
     # Function is for setting nodes' level and setting all targets as covered
     def setLevels(self):
         for node in self.listNodes:
@@ -65,7 +64,6 @@ class Network:
             tmp2.clear()
         return
 
-
     def operate(self, t=1):
         
         for node in self.listNodes:
@@ -73,14 +71,13 @@ class Network:
         self.env.process(self.baseStation.operate(t=t))
         while True:
             yield self.env.timeout(t / 10.0)
-            self.setLevels()
+            self.setLevels() #
             self.alive = self.check_targets()
             yield self.env.timeout(9.0 * t / 10.0)
             if self.alive == 0 or self.env.now >= self.max_time:
                 break         
         return
 
-    # If any target dies, value is set to 0
     def check_targets(self):
         return min(self.targets_active)
     

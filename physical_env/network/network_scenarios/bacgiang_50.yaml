@@ -9,6 +9,7 @@ node_phy_spe:
   prob_gp: 1
   sen_range: 40
   threshold: 540
+max_time: 604800
 seed: 0
 Rc: 80
 Rs: 40
