@@ -32,6 +32,6 @@ class NetworkIO:
         baseStation = BaseStation(location=net_argc["base_station"])
         
         env = simpy.Environment()
-        return env, Network(env, listNodes, baseStation, listTargets, net_argc["max_time"])
+        return env, Network(env, baseStation, listTargets, net_argc["max_time"])
 
  

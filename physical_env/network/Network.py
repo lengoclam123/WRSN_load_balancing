@@ -1,11 +1,16 @@
 import copy
 import numpy as np
-import Cluster
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from scipy.spatial.distance import euclidean
+import math
+from scipy.signal import find_peaks
+
+from Cluster import Cluster
 
 class Network:
-    def __init__(self, env, listNodes, baseStation, listTargets, max_time):
+    def __init__(self, env, baseStation, listTargets, max_time):
         self.env = env
-        # self.listNodes = listNodes
 
         self.baseStation = baseStation
         self.listTargets = listTargets
@@ -30,36 +35,74 @@ class Network:
             it += 1
         
 
-        self.listNodes = None
-        self.listClusters = None
-        self.listEdges = None
-
+        self.listNodes = []
+        self.listClusters = []
+        self.listEdges = []
 
         self.createNodes()
-
     
     # Function is for setting nodes' level and setting all targets as covered
     def createNodes(self):
         self.listClusters = self.clustering()
-        self.listEdges = self.createEdges(self.listClusters)
+        # self.listEdges = self.createEdges(self.listClusters)
 
-        nodeInsideCluster = self.createNodeInCluster(self.listClusters, self.listEdges)
-        nodeBetweenCluster = self.createNodeBetweenCluster(self.listEdges)
+        # nodeInsideCluster = self.createNodeInCluster(self.listClusters, self.listEdges)
+        # nodeBetweenCluster = self.createNodeBetweenCluster(self.listEdges)
 
-        self.listNodes = nodeBetweenCluster + nodeInsideCluster
+        # self.listNodes = nodeBetweenCluster + nodeInsideCluster
+        pass
 
     def clustering(self):
-        # Input :
-            # listTargets
+        # Input : listTargets
+        listTargetLocation = []
+        for target in self.listTargets:
+            listTargetLocation.append(target.location)
 
-        # Todo :
-            # cluster
-            # centroid
-            # define id 
+        # Elbow's method applying gradient rule to find number of clusters K
+        inertias = []
+        for k in range(1, len(listTargetLocation) + 1):
+            kmeans = KMeans(n_clusters=k, random_state=0)
+            kmeans.fit(listTargetLocation)
+            inertias.append(kmeans.inertia_)
 
-        # Output :
-            # [Cluster1,Cluster2 , . . . ]
-        return None
+        gradient = np.gradient(inertias)
+        peaks, _ = find_peaks(gradient)
+        optimal_cluster = peaks[0] + 1
+        
+        kmeans = KMeans(optimal_cluster)
+        kmeans.fit(listTargetLocation)
+        centers = kmeans.cluster_centers_
+
+        # temporary drawing process
+        x = []
+        y = []
+        for targetLocation in listTargetLocation:
+            x.append(targetLocation[0])
+            y.append(targetLocation[1])
+
+        plt.scatter(x, y, c=kmeans.labels_)
+        plt.scatter(centers[:, 0], centers[:, 1], c='red', marker='o', s=20)  # Vẽ các tâm của mỗi cluster
+
+        plt.show()
+
+        # Output : [Cluster1,Cluster2 , . . . ]
+        clusters = []
+        labels = kmeans.labels_
+        
+        for i in range(0, optimal_cluster):
+            listTargetsInCluster = []
+            for j in range(0, len(listTargetLocation)):
+                if labels[j] == i:
+                    listTargetsInCluster.append(self.listTargets[j])
+            cluster = Cluster(i, listTargetsInCluster, centers[i])
+            clusters.append(cluster)
+        
+        for cluster in clusters:
+            print(cluster.id)
+            print(cluster.centroid)
+            print(cluster.listTargets)
+        return clusters
+    
     
     def createEdges(self):
         # Input 
