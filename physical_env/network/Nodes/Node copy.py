@@ -12,7 +12,7 @@ class Node:
     def __init__(self, location, phy_spe):
         self.env = None
         self.net = None
-
+    
         self.location = np.array(location)
         self.energy = phy_spe['capacity']
         self.threshold = phy_spe['threshold']
@@ -41,6 +41,14 @@ class Node:
         self.log = []
         self.log_energy = 0
         self.check_status()
+
+        # Edit by user
+
+        # self.typeNode = " "
+        # create inhiret 
+
+        self.startId = None
+        self.endId = None
 
     def operate(self, t=1):
         """
@@ -89,16 +97,6 @@ class Node:
             if euclidean(self.location, target.location) <= self.sen_range:
                 self.listTargets.append(target)
 
-    def find_receiver(self):
-        candidates = [node for node in self.neighbors
-                      if node.level < self.level and node.status == 1]
-        if len(candidates) > 0:
-            distances = [euclidean(candidate.location, self.location) for candidate in
-                         candidates]
-            return candidates[np.argmin(distances)]
-        else:
-            return None
-
     def generate_packages(self):
         for target in self.listTargets:
             self.send_package(Package(target.id, self.package_size))
@@ -109,6 +107,7 @@ class Node:
             receiver = self.find_receiver()
         else:
             receiver = self.net.baseStation
+
         if receiver is not None:
             d = euclidean(self.location, receiver.location)
             e_send = ((self.et + self.efs * d ** 2) if d <= d0
@@ -117,9 +116,21 @@ class Node:
                 self.energy = self.threshold
             else:
                 self.energy -= e_send
-                receiver.receive_package(package)
+                receiver.receive_package(package) #
                 self.log_energy += e_send
         self.check_status()
+
+    def find_receiver(self):
+
+        candidates = [node for node in self.neighbors
+                      if node.level < self.level and node.status == 1 ] # check type of Node
+        if len(candidates) > 0:
+            distances = [euclidean(candidate.location, self.location) for candidate in
+                         candidates]
+
+            return candidates[np.argmin(distances)]
+        else: 
+            return None
 
     def receive_package(self, package):
         e_receive = self.er * package.package_size
@@ -127,23 +138,23 @@ class Node:
             self.energy = self.threshold
         else:
             self.energy -= e_receive
-            self.send_package(package)
+            self.send_package(package) #
             self.log_energy += e_receive
         self.check_status()
 
-    def charger_connection(self, mc):
-        if self.status == 0:
-            return
-        tmp = mc.alpha / (euclidean(self.location, mc.location) + mc.beta) ** 2
-        self.energyRR += tmp
-        mc.chargingRate += tmp
+    # def charger_connection(self, mc):
+    #     if self.status == 0:
+    #         return
+    #     tmp = mc.alpha / (euclidean(self.location, mc.location) + mc.beta) ** 2
+    #     self.energyRR += tmp
+    #     mc.chargingRate += tmp
 
-    def charger_disconnection(self, mc):
-        if self.status == 0:
-            return
-        tmp = mc.alpha / (euclidean(self.location, mc.location) + mc.beta) ** 2
-        self.energyRR -= tmp
-        mc.chargingRate -= tmp
+    # def charger_disconnection(self, mc):
+    #     if self.status == 0:
+    #         return
+    #     tmp = mc.alpha / (euclidean(self.location, mc.location) + mc.beta) ** 2
+    #     self.energyRR -= tmp
+    #     mc.chargingRate -= tmp
 
     def check_status(self):
         if self.energy <= self.threshold:

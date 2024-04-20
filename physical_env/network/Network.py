@@ -1,9 +1,12 @@
 import copy
 import numpy as np
+import Cluster
+
 class Network:
     def __init__(self, env, listNodes, baseStation, listTargets, max_time):
         self.env = env
-        self.listNodes = listNodes
+        # self.listNodes = listNodes
+
         self.baseStation = baseStation
         self.listTargets = listTargets
         self.targets_active = [1 for _ in range(len(self.listTargets))]
@@ -13,26 +16,85 @@ class Network:
         baseStation.net = self
         self.max_time = max_time
 
-        self.frame = np.array([self.baseStation.location[0], self.baseStation.location[0], self.baseStation.location[1], self.baseStation.location[1]], np.float64)
-        it = 0
-        for node in self.listNodes:
-            node.env = self.env
-            node.net = self
-            node.id = it
-            it += 1
-            self.frame[0] = min(self.frame[0], node.location[0])
-            self.frame[1] = max(self.frame[1], node.location[0])
-            self.frame[2] = min(self.frame[2], node.location[1])
-            self.frame[3] = max(self.frame[3], node.location[1])
-        self.nodes_density = len(self.listNodes) / ((self.frame[1] - self.frame[0]) * (self.frame[3] - self.frame[2]))
+        # it = 0
+        # for node in self.listNodes:
+        #     node.env = self.env
+        #     node.net = self
+        #     node.id = it
+        #     it += 1
+           
         it = 0
 
-        # Setting name for each target
         for target in listTargets:
             target.id = it
             it += 1
-         
+        
+
+        self.listNodes = None
+        self.listClusters = None
+        self.listEdges = None
+
+
+        self.createNodes()
+
+    
     # Function is for setting nodes' level and setting all targets as covered
+    def createNodes(self):
+        self.listClusters = self.clustering()
+        self.listEdges = self.createEdges(self.listClusters)
+
+        nodeInsideCluster = self.createNodeInCluster(self.listClusters, self.listEdges)
+        nodeBetweenCluster = self.createNodeBetweenCluster(self.listEdges)
+
+        self.listNodes = nodeBetweenCluster + nodeInsideCluster
+
+    def clustering(self):
+        # Input :
+            # listTargets
+
+        # Todo :
+            # cluster
+            # centroid
+            # define id 
+
+        # Output :
+            # [Cluster1,Cluster2 , . . . ]
+        return None
+    
+    def createEdges(self):
+        # Input 
+            # [Cluster1,Cluster2 , . . . ]
+
+        # Output 
+            # [(1,2),(3,2),(4,5) ,  . . .]
+
+        pass
+
+    def createNodeInCluster(self):
+        # Input 
+            # self.listClusters, self.listEdges
+
+        # Todo
+            # for cluster in self.listClusters:
+            #     cluster.listNodes = [Node1,Node2 , . . . ]
+        pass
+
+    def createNodeBetweenCluster(self):
+        
+        # Input 
+            # self.listEdges
+
+        # Todo
+            # add start Id and End Id for relayNode
+
+        # Output
+            # [relayNode1,relayNode2 , . . . ]
+        pass
+
+
+        
+
+
     def setLevels(self):
         for node in self.listNodes:
             node.level = -1
@@ -69,6 +131,7 @@ class Network:
         for node in self.listNodes:
             self.env.process(node.operate(t=t))
         self.env.process(self.baseStation.operate(t=t))
+        
         while True:
             yield self.env.timeout(t / 10.0)
             self.setLevels() #

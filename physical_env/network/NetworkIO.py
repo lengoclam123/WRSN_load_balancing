@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.dirname(__file__))
 from BaseStation import BaseStation
 from Network import Network
-from Node import Node
+from physical_env.network.Nodes.Node import Node
 from Target import Target
 
 class NetworkIO:
@@ -30,6 +30,7 @@ class NetworkIO:
             listTargets.append(Target(location=tmp))
 
         baseStation = BaseStation(location=net_argc["base_station"])
+        
         env = simpy.Environment()
         return env, Network(env, listNodes, baseStation, listTargets, net_argc["max_time"])
 
