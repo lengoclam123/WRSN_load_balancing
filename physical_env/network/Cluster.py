@@ -3,6 +3,6 @@ class Cluster:
 
         self.listTargets = listTargets
         self.centroid = centroid
-        self.id = id
+        self.cluster_id = id
         self.listNodes = None
     

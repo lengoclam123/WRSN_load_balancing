@@ -5,8 +5,10 @@ from sklearn.cluster import KMeans
 from scipy.spatial.distance import euclidean
 import math
 from scipy.signal import find_peaks
+import json
 
 from Cluster import Cluster
+from Nodes import Node
 
 class Network:
     def __init__(self, env, baseStation, listTargets, max_time):
@@ -31,7 +33,7 @@ class Network:
         it = 0
 
         for target in listTargets:
-            target.id = it
+            target.target_id = it
             it += 1
         
 
@@ -53,6 +55,7 @@ class Network:
         pass
 
     def clustering(self):
+
         # Input : listTargets
         listTargetLocation = []
         for target in self.listTargets:
@@ -82,7 +85,6 @@ class Network:
 
         plt.scatter(x, y, c=kmeans.labels_)
         plt.scatter(centers[:, 0], centers[:, 1], c='red', marker='o', s=20)  # Vẽ các tâm của mỗi cluster
-
         plt.show()
 
         # Output : [Cluster1,Cluster2 , . . . ]
@@ -96,14 +98,19 @@ class Network:
                     listTargetsInCluster.append(self.listTargets[j])
             cluster = Cluster(i, listTargetsInCluster, centers[i])
             clusters.append(cluster)
-        
-        for cluster in clusters:
-            print(cluster.id)
-            print(cluster.centroid)
-            print(cluster.listTargets)
+
+        # Chuyển đổi danh sách thành danh sách các từ điển
+        json_data = [convert_cluster_to_dict(cluster) for cluster in clusters]
+        # Chuyển đổi danh sách thành chuỗi JSON
+        json_string = json.dumps(json_data, indent=4)
+        print(json_string)
+        with open("clusters.json", "w") as json_file:
+            json.dump(json_data, json_file, indent=4)
+
+
         return clusters
     
-    
+
     def createEdges(self):
         # Input 
             # [Cluster1,Cluster2 , . . . ]
@@ -123,19 +130,59 @@ class Network:
         pass
 
     def createNodeBetweenCluster(self):
+
+        list_relay_nodes = []
+
+        for edge in self.listEdges:
+            cluster_out = edge[0]
+            cluster_in = edge[1]        
+            list_relay_nodes.append(Network.create_relay_nodes(cluster_out, cluster_in))
+
+        return list_relay_nodes
+    
+    @staticmethod
+    def find_node_in_out(cluster_out, cluster_in):
+        node_in, node_out = None, None
+
+        list_node_in = cluster_in.listNodes
+        list_node_out = cluster_out.listNodes
+
+        min_distance = float('inf')
+
+        for temp_node_in in cluster_in:
+            for temp_node_out in cluster_out:
+                temp_distance = euclidean(temp_node_in, temp_node_out)
+                if temp_distance < min_distance:
+                    min_distance = temp_distance
+                    node_in, node_out = temp_node_in, temp_node_out
+
+        return node_in, node_out
+
         
-        # Input 
-            # self.listEdges
+    @staticmethod
+    def create_relay_nodes(cluster_out, cluster_in):
 
-        # Todo
-            # add start Id and End Id for relayNode
+        list_relay_nodes = []
 
-        # Output
-            # [relayNode1,relayNode2 , . . . ]
-        pass
+        node_in, node_out = Network.find_node_out(cluster_out, cluster_in)
 
+        distance = euclidean(node_out.location, node_in.location)
+        com_range = node_in.com_range
 
-        
+        relay_nodes_number = distance // com_range
+        if distance % relay_nodes_number == 0:
+            relay_nodes_number =- relay_nodes_number
+
+        # khoảng cách hoành độ  delta_x và tung độ delta_y giữa hai node liên tiếp
+        delta_x = (node_in.location[0] - node_out.location[0]) / relay_nodes_number
+        delta_y = (node_in.location[1] - node_out.location[1]) / relay_nodes_number
+
+        for i in range(1, relay_nodes_number + 1):
+            node_phy_spe = {}
+            relay_node = Node((node_in.location[0] + delta_x * i, node_in.location[i] + delta_y * i), node_phy_spe)
+            list_relay_nodes.append(relay_node)
+
+        return list_relay_nodes
 
 
     def setLevels(self):
@@ -193,3 +240,11 @@ class Network:
             if node.status == 0:
                 tmp += 1
         return tmp
+
+def convert_cluster_to_dict(cluster):
+    return {
+        'cluster_id': cluster.cluster_id,
+        'listTargets': [target.__dict__ for target in cluster.listTargets],
+        'centroid': cluster.centroid.tolist()  # Chuyển mảng numpy thành danh sách Python
+    }
+    
