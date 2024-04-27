@@ -5,6 +5,7 @@ import random
 import numpy as np
 import sys
 import os
+import json
 sys.path.append(os.path.dirname(__file__))
 from BaseStation import BaseStation
 from Network import Network
@@ -26,11 +27,13 @@ class NetworkIO:
         listTargets = []
         for tmp in net_argc["nodes"]:
             listNodes.append(Node(location=tmp, phy_spe=copy.deepcopy(self.node_phy_spe)))
-        for tmp in self.net_argc["targets"]:
+        for  tmp in self.net_argc["targets"]:
             listTargets.append(Target(location=tmp))
 
         baseStation = BaseStation(location=net_argc["base_station"])
-        
+        # with open("listTargets.json", "w") as output_file:
+        #     json.dump(listTargets, output_file)
+        print(listTargets)
         env = simpy.Environment()
         return env, Network(env, listNodes, baseStation, listTargets, net_argc["max_time"])
 
