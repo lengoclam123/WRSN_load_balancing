@@ -1,8 +1,8 @@
 class Cluster:
-    def __init__(self,listTargets):
+    def __init__(self, id, listTargets, centroid):
 
         self.listTargets = listTargets
-        self.centroid = None
-        self.id = None
+        self.centroid = centroid
+        self.cluster_id = id
         self.listNodes = None
     
