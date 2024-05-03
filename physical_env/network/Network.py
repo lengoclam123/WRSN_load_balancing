@@ -321,4 +321,34 @@ def convert_cluster_to_dict(cluster):
         'listTargets': [target.__dict__ for target in cluster.listTargets],
         'centroid': cluster.centroid.tolist()  # Chuyển mảng numpy thành danh sách Python
     }
+
+def show_node_energy(self):
+        sensor_energies = []
+
+        for node in self.listNodes:
+            energy = node.energy/10800
+            sensor_energies.append((node.id, energy))
+        # sensor_energies = [(1, 80), (2, 65), (3, 90), (4, 75), (5, 85), (6, 70)]
+        ids, energies = zip(*sensor_energies)
+        plt.bar(ids, energies)
+        plt.xlabel('ID Cảm biến')
+        plt.ylabel('Mức năng lượng (%)')
+        plt.title('Mức năng lượng của các cảm biến')
+        plt.show()
+    # visualize network
+def visualize_network(self):
+        # Tạo danh sách tọa độ x và y của các mục tiêu
+        x_targets = [target.location[0] for target in self.listTargets]
+        y_targets = [target.location[1] for target in self.listTargets]
+        # Tạo tọa độ x và y của trạm cơ sở
+        x_base_station = 500
+        y_base_station = 500
+        plt.figure(figsize=(10, 8))
+        plt.scatter(x_targets, y_targets, color='red', marker='*', label='Targets')
+        plt.scatter(x_base_station, y_base_station, color='blue', marker='*', s=300, label='Base Station')
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.legend()
+        # plt.grid(True)
+        plt.show()
     
