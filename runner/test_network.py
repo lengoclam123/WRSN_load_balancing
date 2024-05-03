@@ -5,7 +5,7 @@ from physical_env.network.NetworkIO import NetworkIO
 
 
 def log(net, mcs):
-   
+    
     while True:
         print(net.env.now, net.check_nodes())
         yield net.env.timeout(1.0)

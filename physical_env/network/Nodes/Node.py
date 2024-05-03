@@ -42,11 +42,6 @@ class Node:
         self.log_energy = 0
         self.check_status()
 
-        # Edit by user
-
-        # self.typeNode = " "
-        # create inhiret 
-
         self.startId = None
         self.endId = None
 
@@ -96,9 +91,6 @@ class Node:
         for target in self.net.listTargets:
             if euclidean(self.location, target.location) <= self.sen_range:
                 self.listTargets.append(target)
-
-
-
 
     def generate_packages(self):
         for target in self.listTargets:

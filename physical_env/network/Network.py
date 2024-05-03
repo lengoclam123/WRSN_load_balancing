@@ -59,6 +59,7 @@ class Network:
 
         # Output :
             # [Cluster1,Cluster2 , . . . ]
+
         return None
     
     def createEdges(self):
@@ -90,9 +91,6 @@ class Network:
         # Output
             # [relayNode1,relayNode2 , . . . ]
         pass
-
-
-        
 
 
     def setLevels(self):
