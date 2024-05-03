@@ -35,6 +35,6 @@ class NetworkIO:
         #     json.dump(listTargets, output_file)
         print(listTargets)
         env = simpy.Environment()
-        return env, Network(env, listNodes, baseStation, listTargets, net_argc["max_time"])
+        return env, Network(env, baseStation, listTargets, net_argc["max_time"])
 
  

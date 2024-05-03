@@ -1,17 +1,18 @@
 import copy
 import numpy as np
-import Cluster
-import json
-import math
 import matplotlib.pyplot as plt
-import numpy as np
-from scipy.spatial import cKDTree
-from itertools import cycle
+from sklearn.cluster import KMeans
+from scipy.spatial.distance import euclidean
+import math
+from scipy.signal import find_peaks
+import json
+
+from Cluster import Cluster
+from Nodes import Node
 
 class Network:
-    def __init__(self, env, listNodes, baseStation, listTargets, max_time):
+    def __init__(self, env, baseStation, listTargets, max_time):
         self.env = env
-        # self.listNodes = listNodes
 
         self.baseStation = baseStation
         self.listTargets = listTargets
@@ -32,44 +33,84 @@ class Network:
         it = 0
 
         for target in listTargets:
-            target.id = it
+            target.target_id = it
             it += 1
         
 
-        self.listNodes = None
-        self.listClusters = None
-        self.listEdges = None
-
+        self.listNodes = []
+        self.listClusters = []
+        self.listEdges = []
 
         self.createNodes()
-
     
     # Function is for setting nodes' level and setting all targets as covered
     def createNodes(self):
         self.listClusters = self.clustering()
-        self.listEdges = self.createEdges()
+        # self.listEdges = self.createEdges(self.listClusters)
 
-        nodeInsideCluster = self.createNodeInCluster()
-        nodeBetweenCluster = self.createNodeBetweenCluster()
+        # nodeInsideCluster = self.createNodeInCluster(self.listClusters, self.listEdges)
+        # nodeBetweenCluster = self.createNodeBetweenCluster(self.listEdges)
 
         # self.listNodes = nodeBetweenCluster + nodeInsideCluster
+        pass
 
     def clustering(self):
-        # Input :
-            # listTargets
 
-        # Todo :
-            # cluster
-            # centroid
-            # define id 
+        # Input : listTargets
+        listTargetLocation = []
+        for target in self.listTargets:
+            listTargetLocation.append(target.location)
 
-        # Output :
-            # [Cluster1,Cluster2 , . . . ]
-        return None
+        # Elbow's method applying gradient rule to find number of clusters K
+        inertias = []
+        for k in range(1, len(listTargetLocation) + 1):
+            kmeans = KMeans(n_clusters=k, random_state=0)
+            kmeans.fit(listTargetLocation)
+            inertias.append(kmeans.inertia_)
+
+        gradient = np.gradient(inertias)
+        peaks, _ = find_peaks(gradient)
+        optimal_cluster = peaks[0] + 1
+        
+        kmeans = KMeans(optimal_cluster)
+        kmeans.fit(listTargetLocation)
+        centers = kmeans.cluster_centers_
+
+        # temporary drawing process
+        x = []
+        y = []
+        for targetLocation in listTargetLocation:
+            x.append(targetLocation[0])
+            y.append(targetLocation[1])
+
+        plt.scatter(x, y, c=kmeans.labels_)
+        plt.scatter(centers[:, 0], centers[:, 1], c='red', marker='o', s=20)  # Vẽ các tâm của mỗi cluster
+        plt.show()
+
+        # Output : [Cluster1,Cluster2 , . . . ]
+        clusters = []
+        labels = kmeans.labels_
+        
+        for i in range(0, optimal_cluster):
+            listTargetsInCluster = []
+            for j in range(0, len(listTargetLocation)):
+                if labels[j] == i:
+                    listTargetsInCluster.append(self.listTargets[j])
+            cluster = Cluster(i, listTargetsInCluster, centers[i])
+            clusters.append(cluster)
+
+        # Chuyển đổi danh sách thành danh sách các từ điển
+        json_data = [convert_cluster_to_dict(cluster) for cluster in clusters]
+        # Chuyển đổi danh sách thành chuỗi JSON
+        json_string = json.dumps(json_data, indent=4)
+        print(json_string)
+        with open("clusters.json", "w") as json_file:
+            json.dump(json_data, json_file, indent=4)
+
+
+        return clusters
     
 
-
-    
     def createEdges(self):
         # Input 
             # [Cluster1,Cluster2 , . . . ]
@@ -163,19 +204,59 @@ class Network:
         pass
 
     def createNodeBetweenCluster(self):
+
+        list_relay_nodes = []
+
+        for edge in self.listEdges:
+            cluster_out = edge[0]
+            cluster_in = edge[1]        
+            list_relay_nodes.append(Network.create_relay_nodes(cluster_out, cluster_in))
+
+        return list_relay_nodes
+    
+    @staticmethod
+    def find_node_in_out(cluster_out, cluster_in):
+        node_in, node_out = None, None
+
+        list_node_in = cluster_in.listNodes
+        list_node_out = cluster_out.listNodes
+
+        min_distance = float('inf')
+
+        for temp_node_in in cluster_in:
+            for temp_node_out in cluster_out:
+                temp_distance = euclidean(temp_node_in, temp_node_out)
+                if temp_distance < min_distance:
+                    min_distance = temp_distance
+                    node_in, node_out = temp_node_in, temp_node_out
+
+        return node_in, node_out
+
         
-        # Input 
-            # self.listEdges
+    @staticmethod
+    def create_relay_nodes(cluster_out, cluster_in):
 
-        # Todo
-            # add start Id and End Id for relayNode
+        list_relay_nodes = []
 
-        # Output
-            # [relayNode1,relayNode2 , . . . ]
-        pass
+        node_in, node_out = Network.find_node_out(cluster_out, cluster_in)
 
+        distance = euclidean(node_out.location, node_in.location)
+        com_range = node_in.com_range
 
-        
+        relay_nodes_number = distance // com_range
+        if distance % relay_nodes_number == 0:
+            relay_nodes_number =- relay_nodes_number
+
+        # khoảng cách hoành độ  delta_x và tung độ delta_y giữa hai node liên tiếp
+        delta_x = (node_in.location[0] - node_out.location[0]) / relay_nodes_number
+        delta_y = (node_in.location[1] - node_out.location[1]) / relay_nodes_number
+
+        for i in range(1, relay_nodes_number + 1):
+            node_phy_spe = {}
+            relay_node = Node((node_in.location[0] + delta_x * i, node_in.location[i] + delta_y * i), node_phy_spe)
+            list_relay_nodes.append(relay_node)
+
+        return list_relay_nodes
 
 
     def setLevels(self):
@@ -233,34 +314,11 @@ class Network:
             if node.status == 0:
                 tmp += 1
         return tmp
-    
-    def show_node_energy(self):
-        sensor_energies = []
 
-        for node in self.listNodes:
-            energy = node.energy/10800
-            sensor_energies.append((node.id, energy))
-        # sensor_energies = [(1, 80), (2, 65), (3, 90), (4, 75), (5, 85), (6, 70)]
-        ids, energies = zip(*sensor_energies)
-        plt.bar(ids, energies)
-        plt.xlabel('ID Cảm biến')
-        plt.ylabel('Mức năng lượng (%)')
-        plt.title('Mức năng lượng của các cảm biến')
-        plt.show()
-    # visualize network
-    def visualize_network(self):
-        # Tạo danh sách tọa độ x và y của các mục tiêu
-        x_targets = [target.location[0] for target in self.listTargets]
-        y_targets = [target.location[1] for target in self.listTargets]
-        # Tạo tọa độ x và y của trạm cơ sở
-        x_base_station = 500
-        y_base_station = 500
-        plt.figure(figsize=(10, 8))
-        plt.scatter(x_targets, y_targets, color='red', marker='*', label='Targets')
-        plt.scatter(x_base_station, y_base_station, color='blue', marker='*', s=300, label='Base Station')
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.legend()
-        # plt.grid(True)
-        plt.show()
+def convert_cluster_to_dict(cluster):
+    return {
+        'cluster_id': cluster.cluster_id,
+        'listTargets': [target.__dict__ for target in cluster.listTargets],
+        'centroid': cluster.centroid.tolist()  # Chuyển mảng numpy thành danh sách Python
+    }
     
