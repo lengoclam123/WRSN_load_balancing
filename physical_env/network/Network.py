@@ -117,8 +117,82 @@ class Network:
 
         # Output 
             # [(1,2),(3,2),(4,5) ,  . . .]
+            # funs for create edges
+        # def calDistanceBS(cluster):
+        #     distance =  np.sqrt((cluster['centroid'][0] - 500)**2 + (cluster['centroid'][1] - 500)**2)
+        #     return distance
 
+        # def calDistanceCluster(cluster1, cluster2):
+        #     distance =  np.sqrt(np.sum((np.array(cluster1['centroid']) - np.array(cluster2['centroid']))**2))
+        #     return distance
+
+        # def nearest_cluster_neighbor(cluster, listClusters, kdtree):
+        #     nearest_neighbor_idx = kdtree.query_ball_point(cluster['centroid'], calDistanceBS(cluster))
+        #     if len(nearest_neighbor_idx) > 1:
+        #         nearest_neighbor_idx.remove(listClusters.index(cluster))
+        #     if nearest_neighbor_idx:
+        #         nearest_neighbor = listClusters[nearest_neighbor_idx[0]]
+        #         return nearest_neighbor
+        #     else:
+        #         return None
+
+        # cluster_centroids = [cluster['centroid'] for cluster in self.listClusters]
+        # kdtree = cKDTree(cluster_centroids)
+
+        # edges = []
+        #  for cluster in listClusters:
+        #     nearest_neighbor = nearest_cluster_neighbor(cluster, listClusters)
+        #     if nearest_neighbor:
+        #         if calDistanceCluster(cluster,nearest_neighbor) <  calDistanceBS(cluster):
+        #             edges.append((cluster, nearest_neighbor))
+        #         else:
+        #             edges.append((cluster,(500,500)))
+        #         else:
+        #             edges.append((cluster,(500,500)))
+        # edge_colors = cycle([ 'g', 'b', 'y', 'c', 'm', 'k'])
+
+        # cluster_colors = ['g', 'b', 'y', 'c', 'm', 'pink', 'orange', 'purple', 
+        #                 'brown', 'olive', 'teal', 'navy', 'maroon', 'lime', 'aqua', 'fuchsia',
+        #                 'indigo', 'gold']
+        # plt.figure(figsize=(10, 8))
+        # for i in range(len(listClusters)):
+        #     cluster_data = listClusters[i]
+        #     color = cluster_colors[i % len(cluster_colors)]  
+        #     # Trích xuất các điểm và điểm centroid từ dữ liệu cluster
+        #     points = [target["location"] for target in cluster_data["listTargets"]]
+        #     centroid = cluster_data["centroid"]
+        #     x_points = [point[0] for point in points]
+        #     y_points = [point[1] for point in points]
+        #     # Tạo mảng tọa độ x và y của điểm centroid
+        #     centroid_x = centroid[0]
+        #     centroid_y = centroid[1]
+        #     # Vẽ các điểm trong cluster (trừ điểm centroid)
+        #     plt.scatter(x_points, y_points, color=color)
+        #     # Vẽ điểm centroid
+        #     plt.scatter(centroid_x, centroid_y, color='red')
+        # # Vẽ các cạnh giữa các cluster
+        # for edge, color in zip(edges, edge_colors):
+        #     if edge[1] == (500,500):
+        #         x_values = [edge[0]['centroid'][0], 500]
+        #         y_values = [edge[0]['centroid'][1], 500]
+        #         plt.plot(x_values, y_values, color=color)
+        #     else:
+        #         # Trích xuất tọa độ của các điểm trong cạnh
+        #         x_values = [edge[0]['centroid'][0], edge[1]['centroid'][0]]
+        #         y_values = [edge[0]['centroid'][1], edge[1]['centroid'][1]]
+        #         plt.plot(x_values, y_values, color=color)
+        # plt.scatter(500, 500, color='red', marker='*', s=300, label='Base Station')
+        
+        # plt.xlabel('X')
+        # plt.ylabel('Y')
+        # plt.show()
+        # with open(edges.json, "w") as output_file:
+        #     json.dump(edges, output_file)
+        # return edges
         pass
+
+
+       
 
     def createNodeInCluster(self):
         # Input 
@@ -247,4 +321,34 @@ def convert_cluster_to_dict(cluster):
         'listTargets': [target.__dict__ for target in cluster.listTargets],
         'centroid': cluster.centroid.tolist()  # Chuyển mảng numpy thành danh sách Python
     }
+
+def show_node_energy(self):
+        sensor_energies = []
+
+        for node in self.listNodes:
+            energy = node.energy/10800
+            sensor_energies.append((node.id, energy))
+        # sensor_energies = [(1, 80), (2, 65), (3, 90), (4, 75), (5, 85), (6, 70)]
+        ids, energies = zip(*sensor_energies)
+        plt.bar(ids, energies)
+        plt.xlabel('ID Cảm biến')
+        plt.ylabel('Mức năng lượng (%)')
+        plt.title('Mức năng lượng của các cảm biến')
+        plt.show()
+    # visualize network
+def visualize_network(self):
+        # Tạo danh sách tọa độ x và y của các mục tiêu
+        x_targets = [target.location[0] for target in self.listTargets]
+        y_targets = [target.location[1] for target in self.listTargets]
+        # Tạo tọa độ x và y của trạm cơ sở
+        x_base_station = 500
+        y_base_station = 500
+        plt.figure(figsize=(10, 8))
+        plt.scatter(x_targets, y_targets, color='red', marker='*', label='Targets')
+        plt.scatter(x_base_station, y_base_station, color='blue', marker='*', s=300, label='Base Station')
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.legend()
+        # plt.grid(True)
+        plt.show()
     
