@@ -99,27 +99,48 @@ class Network:
         # kdtree = cKDTree(cluster_centroids)
 
         # edges = []
-        # for cluster in self.listClusters:
-        #     nearest_neighbor = nearest_cluster_neighbor(cluster, self.listClusters, kdtree)
+        #  for cluster in listClusters:
+        #     nearest_neighbor = nearest_cluster_neighbor(cluster, listClusters)
         #     if nearest_neighbor:
-        #         edges.append((cluster, nearest_neighbor))
-        
-        # edge_colors = cycle(['g', 'b', 'y', 'c', 'm', 'k'])
+        #         if calDistanceCluster(cluster,nearest_neighbor) <  calDistanceBS(cluster):
+        #             edges.append((cluster, nearest_neighbor))
+        #         else:
+        #             edges.append((cluster,(500,500)))
+        #         else:
+        #             edges.append((cluster,(500,500)))
+        # edge_colors = cycle([ 'g', 'b', 'y', 'c', 'm', 'k'])
 
-        # # Vẽ các điểm trong các cluster và điểm centroid
-        # cluster_colors = ['g', 'b', 'y', 'c', 'm', 'k']
-
-        # for i, cluster_data in enumerate(self.listClusters):
+        # cluster_colors = ['g', 'b', 'y', 'c', 'm', 'pink', 'orange', 'purple', 
+        #                 'brown', 'olive', 'teal', 'navy', 'maroon', 'lime', 'aqua', 'fuchsia',
+        #                 'indigo', 'gold']
+        # plt.figure(figsize=(10, 8))
+        # for i in range(len(listClusters)):
+        #     cluster_data = listClusters[i]
         #     color = cluster_colors[i % len(cluster_colors)]  
-        #     points = np.array([target["location"] for target in cluster_data["listTargets"]])
-        #     centroid = np.array(cluster_data["centroid"])
-        #     plt.scatter(points[:, 0], points[:, 1], color=color)
-        #     plt.scatter(centroid[0], centroid[1], color='red')
-
+        #     # Trích xuất các điểm và điểm centroid từ dữ liệu cluster
+        #     points = [target["location"] for target in cluster_data["listTargets"]]
+        #     centroid = cluster_data["centroid"]
+        #     x_points = [point[0] for point in points]
+        #     y_points = [point[1] for point in points]
+        #     # Tạo mảng tọa độ x và y của điểm centroid
+        #     centroid_x = centroid[0]
+        #     centroid_y = centroid[1]
+        #     # Vẽ các điểm trong cluster (trừ điểm centroid)
+        #     plt.scatter(x_points, y_points, color=color)
+        #     # Vẽ điểm centroid
+        #     plt.scatter(centroid_x, centroid_y, color='red')
+        # # Vẽ các cạnh giữa các cluster
         # for edge, color in zip(edges, edge_colors):
-        #     x_values = [edge[0]['centroid'][0], edge[1]['centroid'][0]]
-        #     y_values = [edge[0]['centroid'][1], edge[1]['centroid'][1]]
-        #     plt.plot(x_values, y_values, color=color)
+        #     if edge[1] == (500,500):
+        #         x_values = [edge[0]['centroid'][0], 500]
+        #         y_values = [edge[0]['centroid'][1], 500]
+        #         plt.plot(x_values, y_values, color=color)
+        #     else:
+        #         # Trích xuất tọa độ của các điểm trong cạnh
+        #         x_values = [edge[0]['centroid'][0], edge[1]['centroid'][0]]
+        #         y_values = [edge[0]['centroid'][1], edge[1]['centroid'][1]]
+        #         plt.plot(x_values, y_values, color=color)
+        # plt.scatter(500, 500, color='red', marker='*', s=300, label='Base Station')
         
         # plt.xlabel('X')
         # plt.ylabel('Y')
@@ -212,6 +233,20 @@ class Network:
             if node.status == 0:
                 tmp += 1
         return tmp
+    
+    def show_node_energy(self):
+        sensor_energies = []
+
+        for node in self.listNodes:
+            energy = node.energy/10800
+            sensor_energies.append((node.id, energy))
+        # sensor_energies = [(1, 80), (2, 65), (3, 90), (4, 75), (5, 85), (6, 70)]
+        ids, energies = zip(*sensor_energies)
+        plt.bar(ids, energies)
+        plt.xlabel('ID Cảm biến')
+        plt.ylabel('Mức năng lượng (%)')
+        plt.title('Mức năng lượng của các cảm biến')
+        plt.show()
     # visualize network
     def visualize_network(self):
         # Tạo danh sách tọa độ x và y của các mục tiêu
