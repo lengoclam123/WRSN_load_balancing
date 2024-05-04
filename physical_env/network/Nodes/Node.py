@@ -4,7 +4,21 @@ from scipy.spatial.distance import euclidean
 import sys
 import os
 sys.path.append(os.path.dirname(__file__))
-from Package import Package
+from physical_env.network.Package import Package
+
+import os
+
+# Lấy đường dẫn của thư mục hiện tại
+current_directory = os.getcwd()
+
+# Liệt kê các thư mục trong thư mục hiện tại
+directories = [d for d in os.listdir(current_directory) if os.path.isdir(os.path.join(current_directory, d))]
+
+# In ra danh sách các thư mục
+print("Danh sách các thư mục hiện tại:")
+for directory in directories:
+    print(directory)
+
 
 
 class Node:

@@ -7,8 +7,20 @@ import math
 from scipy.signal import find_peaks
 import json
 
+from scipy.spatial import cKDTree
+from itertools import cycle
+
 from Cluster import Cluster
-from Nodes import Node
+from Nodes.Node import Node
+from Nodes.InNode import InNode
+from Nodes.OutNode import OutNode
+from Nodes.RelayNode import RelayNode
+from Nodes.ConnectorNode import ConnectorNode
+from Nodes.SensorNode import SensorNode
+
+# ,OutNode,RelayNode,SensorNode
+from utils.PointBetween import point_between
+
 
 class Network:
     def __init__(self, env, baseStation, listTargets, max_time):
@@ -46,12 +58,12 @@ class Network:
     # Function is for setting nodes' level and setting all targets as covered
     def createNodes(self):
         self.listClusters = self.clustering()
-        # self.listEdges = self.createEdges(self.listClusters)
+        self.listEdges = self.createEdges()
 
-        # nodeInsideCluster = self.createNodeInCluster(self.listClusters, self.listEdges)
-        # nodeBetweenCluster = self.createNodeBetweenCluster(self.listEdges)
+        nodeInsideCluster = self.createNodeInCluster()
+        nodeBetweenCluster = self.createNodeBetweenCluster()
 
-        # self.listNodes = nodeBetweenCluster + nodeInsideCluster
+        self.listNodes = nodeBetweenCluster + nodeInsideCluster
         pass
 
     def clustering(self):
@@ -70,7 +82,8 @@ class Network:
 
         gradient = np.gradient(inertias)
         peaks, _ = find_peaks(gradient)
-        optimal_cluster = peaks[0] + 1
+        # optimal_cluster = peaks[0] + 1
+        optimal_cluster = 19
         
         kmeans = KMeans(optimal_cluster)
         kmeans.fit(listTargetLocation)
@@ -103,7 +116,6 @@ class Network:
         json_data = [convert_cluster_to_dict(cluster) for cluster in clusters]
         # Chuyển đổi danh sách thành chuỗi JSON
         json_string = json.dumps(json_data, indent=4)
-        print(json_string)
         with open("clusters.json", "w") as json_file:
             json.dump(json_data, json_file, indent=4)
 
@@ -117,8 +129,96 @@ class Network:
 
         # Output 
             # [(1,2),(3,2),(4,5) ,  . . .]
+            # [(cluster1, cluster2), (cluster, base station),  . . . ]
+            # funs for create edges
+        def calDistanceBS(cluster):
+            distance =  np.sqrt((cluster.centroid[0] - 500)**2 + (cluster.centroid[1] - 500)**2)
+            return distance
 
-        pass
+        def calDistanceCluster(cluster1, cluster2):
+            distance =  np.sqrt(np.sum((np.array(cluster1.centroid) - np.array(cluster2.centroid))**2))
+            return distance
+
+        # def nearest_cluster_neighbor(cluster, listClusters, kdtree):
+        #     nearest_neighbor_idx = kdtree.query_ball_point(cluster.centroid, calDistanceBS(cluster))
+        #     if len(nearest_neighbor_idx) > 1:
+        #         nearest_neighbor_idx.remove(listClusters.index(cluster))
+        #     if nearest_neighbor_idx:
+        #         nearest_neighbor = listClusters[nearest_neighbor_idx[0]]
+        #         return nearest_neighbor
+        #     else:
+        #         return None
+            
+
+        def nearest_cluster_neighbor(cluster):
+            min_distance_cluster = float('inf')
+            nearest_neighbor = None
+            for other_cluster in self.listClusters:
+                if cluster != other_cluster and calDistanceBS(other_cluster) < calDistanceBS(cluster):
+                    distance = calDistanceCluster(cluster, other_cluster)
+                    if distance < min_distance_cluster:
+                        min_distance_cluster = distance
+                        nearest_neighbor = other_cluster
+            return nearest_neighbor
+
+        cluster_centroids = [cluster.centroid for cluster in self.listClusters]
+        kdtree = cKDTree(cluster_centroids)
+
+        edges = []
+        for cluster in self.listClusters:
+            nearest_neighbor = nearest_cluster_neighbor(cluster)
+            if nearest_neighbor:
+                if calDistanceCluster(cluster,nearest_neighbor) <  calDistanceBS(cluster):
+                    edges.append((cluster, nearest_neighbor))
+                else:
+                    edges.append((cluster, self.baseStation))
+            else:
+                edges.append((cluster,self.baseStation))
+        edge_colors = cycle([ 'g', 'b', 'y', 'c', 'm', 'k'])
+
+        cluster_colors = ['g', 'b', 'y', 'c', 'm', 'pink', 'orange', 'purple', 
+                        'brown', 'olive', 'teal', 'navy', 'maroon', 'lime', 'aqua', 'fuchsia',
+                        'indigo', 'gold']
+        plt.figure(figsize=(10, 8))
+        for i in range(len(self.listClusters)):
+            cluster = self.listClusters[i]
+            color = cluster_colors[i % len(cluster_colors)]  
+            # Trích xuất các điểm và điểm centroid từ dữ liệu cluster
+            points = [target.location for target in cluster.listTargets]
+            centroid = cluster.centroid
+            x_points = [point[0] for point in points]
+            y_points = [point[1] for point in points]
+            # Tạo mảng tọa độ x và y của điểm centroid
+            centroid_x = centroid[0]
+            centroid_y = centroid[1]
+            # Vẽ các điểm trong cluster (trừ điểm centroid)
+            plt.scatter(x_points, y_points, color=color)
+            # Vẽ điểm centroid
+            plt.scatter(centroid_x, centroid_y, color='red')
+        # Vẽ các cạnh giữa các cluster
+        for edge, color in zip(edges, edge_colors):
+
+            if edge[1] is self.baseStation:
+                x_values = [edge[0].centroid[0], 500]
+                y_values = [edge[0].centroid[1], 500]
+                plt.plot(x_values, y_values, color=color)
+            else:
+                # Trích xuất tọa độ của các điểm trong cạnh
+                x_values = [edge[0].centroid[0], edge[1].centroid[0]]
+                y_values = [edge[0].centroid[1], edge[1].centroid[1]]
+                plt.plot(x_values, y_values, color=color)
+        plt.scatter(500, 500, color='red', marker='*', s=300, label='Base Station')
+        
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.show()
+        
+        # with open(edges.json, "w") as output_file:
+        #     json.dump(edges, output_file)
+
+
+        return edges
+
 
     def createNodeInCluster(self):
         # Input 
@@ -127,18 +227,176 @@ class Network:
         # Todo
             # for cluster in self.listClusters:
             #     cluster.listNodes = [Node1,Node2 , . . . ]
-        pass
+
+        com_range =  80
+        sen_range =  40
+        Cnt_in = [0] * (len(self.listClusters) + 1)
+        Cnt_out= [0] * (len(self.listClusters) + 1)
+        for edge in self.listEdges:
+            if(edge[1].__class__.__name__ != "BaseStation"): 
+             Cnt_in[edge[1].id] +=1
+            Cnt_out[edge[0].id]+=1
+        ID = 0
+        nodeInsideCluster = []
+        for cluster in self.listClusters:
+            id = cluster.id
+            print(id,Cnt_in[id],Cnt_out[id])
+
+            phi = 2 * math.pi / (int) (Cnt_in[id] + Cnt_out[id] + 1)
+            alpha = 0
+            cnt = 0
+            for i in range(0,Cnt_in[id] + Cnt_out[id]):
+                X = cluster.centroid[0] + (com_range/2) * math.cos(alpha)
+                Y = cluster.centroid[1] + (com_range/2) * math.sin(alpha)
+                cnt +=1
+                ID  +=1
+                if(cnt<=Cnt_in[id]): 
+                      cluster.listNodes.append(InNode([X,Y],ID))
+                else: cluster.listNodes.append(OutNode([X,Y],ID))
+                
+                alpha += phi
+
+            for i in range(0,len(cluster.listNodes)):
+               for j in range(i+1,len(cluster.listNodes)):
+                   if(cluster.listNodes[i].__class__.__name__ == "InNode" and cluster.listNodes[j].__class__.__name__ == "OutNode"):
+                       x1 = cluster.listNodes[i].location[0]
+                       y1 = cluster.listNodes[i].location[1]
+                       x2 = cluster.listNodes[j].location[0]
+                       y2 = cluster.listNodes[j].location[1]
+                       u  = self.baseStation.location[0]
+                       v  = self.baseStation.location[1]
+                       distance_1 = math.sqrt((x1-u)**2 + (y1-v)**2)
+                       distance_2 = math.sqrt((x2-u)**2 + (y2-v)**2)
+                       if(distance_1 < distance_2): 
+                          tmp = cluster.listNodes[j].location
+                          cluster.listNodes[j].location = cluster.listNodes[i].location
+                          cluster.listNodes[i].location = tmp
+
+            for i in range (0,len(cluster.listTargets)):
+                for j in range (i+1,len(cluster.listTargets)):
+                       x1 = cluster.listTargets[i].location[0]
+                       y1 = cluster.listTargets[i].location[1]
+                       x2 = cluster.listTargets[j].location[0]
+                       y2 = cluster.listTargets[j].location[1]
+                       u  = cluster.centroid[0]
+                       v  = cluster.centroid[1]
+                       distance_1 = math.sqrt((x1-u)**2 + (y1-v)**2)
+                       distance_2 = math.sqrt((x2-u)**2 + (y2-v)**2)
+                       if(distance_1 > distance_2): 
+                          tmp = cluster.listTargets[j]
+                          cluster.listTargets[j] = cluster.listTargets[i]
+                          cluster.listTargets[i] = tmp
+
+            for target in cluster.listTargets:
+                u = target.location[0]
+                v = target.location[1]
+                check = 0
+                for i in range(0,len(cluster.listNodes)):
+                    if(cluster.listNodes[i].__class__.__name__ == "SensorNode"):
+                      x = cluster.listNodes[i].location[0]
+                      y = cluster.listNodes[i].location[1]
+                      distance  = math.sqrt((x-u)**2 + (y-v)**2)
+                      if(distance <= sen_range): check = 1
+                if(check): continue 
+                u , v = point_between(target.location,cluster.centroid,sen_range)
+                ID += 1
+                if(u != cluster.centroid[0] and v != cluster.centroid[1]):
+                    cluster.listNodes.append(SensorNode([u,v],ID))
+                U = cluster.centroid[0]
+                V = cluster.centroid[1]
+                min_distance = 100000007
+                for i in range(0,len(cluster.listNodes)):
+                    Ok = 0
+                    if(Cnt_in[id] == 0 and cluster.listNodes[i].__class__.__name__ =="OutNode"): Ok = 1
+                    if(cluster.listNodes[i].__class__.__name__ =="ConnectorNode" or cluster.listNodes[i].__class__.__name__ =="InNode"): Ok = 1
+                    if(Ok):
+                      x = cluster.listNodes[i].location[0]
+                      y = cluster.listNodes[i].location[1]
+                      distance = math.sqrt((x-u)**2 + (y-v)**2) 
+                      if(distance < min_distance):
+                         min_distance = distance
+                         U = x 
+                         V = y 
+                while True:
+                    distance = math.sqrt((U-u)**2 + (V-v)**2) 
+                    if(distance < com_range ): break
+                    if(distance < 2*com_range):
+                        U, V = point_between ( [U,V], (u,v) , distance/2)
+                        ID += 1
+                        cluster.listNodes.append(ConnectorNode([U,V],ID))
+                        break
+                    U, V = point_between ( [U,V], (u,v) , com_range)
+                    ID += 1
+                    cluster.listNodes.append(ConnectorNode([U,V],ID))
+
+            nodeInsideCluster = nodeInsideCluster + cluster.listNodes  
+        cntt = 0
+        for node in nodeInsideCluster:
+            if(node.__class__.__name__ == "ConnectorNode"): cntt+=1
+        print(cntt)  
+        return nodeInsideCluster   
+
 
     def createNodeBetweenCluster(self):
+        # input 
+            
+        # Input 
+            # self.listEdges
 
-        list_relay_nodes = []
+        # Todo
+            # add start Id and End Id for relayNode
 
+        # Output
+            # [relayNode1,relayNode2 , . . . ]
+        ListRelayNode = []
+        com_range = 80
+        ID = 0
+        Cnt_in = [0] * (len(self.listClusters) + 1)
+        Cnt_out =[0] * (len(self.listClusters) + 1)
+        list_edge = []
         for edge in self.listEdges:
-            cluster_out = edge[0]
-            cluster_in = edge[1]        
-            list_relay_nodes.append(Network.create_relay_nodes(cluster_out, cluster_in))
+            if edge[1].__class__.__name__ == "Cluster":
+                  list_edge.append((self.listClusters[edge[0].id],self.listClusters[edge[1].id]))
+            else: list_edge.append((self.listClusters[edge[0].id],self.baseStation))
+        
+        for edge in list_edge:
+            u = edge[0]
+            v = edge[1]
+            U = 0
+            V = self.baseStation.location
+            cnt = 0
+            for node in u.listNodes:
+                if(node.__class__.__name__ == "OutNode"):
+                      if(cnt == Cnt_out[u.id]):
+                          U = node.location
+                          Cnt_out[u.id] += 1
+                          break
+                      cnt += 1
+            cnt = 0
+            if v.__class__.__name__ == "Cluster":
+             for node in v.listNodes:
+                if(node.__class__.__name__ == "InNode"):
+                      if(cnt == Cnt_in[v.id]):
+                          V = node.location
+                          Cnt_in[v.id] += 1 
+                          break
+                      cnt += 1   
+            #print(U,V)
+            while True:
+                    distance = math.sqrt((U[0]-V[0])**2 + (U[1]-V[1])**2) 
+                    if(distance < com_range ): break
+                    if(distance < 2*com_range):
+                        U[0], U[1] = point_between ( U, V , distance/2)
+                        ID += 1
+                        ListRelayNode.append(RelayNode(U,ID))
+                        break
+                    U[0], U[1] = point_between ( U, V , com_range)
+                    ID += 1
+                    ListRelayNode.append(RelayNode([U[0],U[1]],ID))   
 
-        return list_relay_nodes
+        return ListRelayNode
+
+
     
     @staticmethod
     def find_node_in_out(cluster_out, cluster_in):
@@ -243,8 +501,38 @@ class Network:
 
 def convert_cluster_to_dict(cluster):
     return {
-        'cluster_id': cluster.cluster_id,
+        'cluster_id': cluster.id,
         'listTargets': [target.__dict__ for target in cluster.listTargets],
         'centroid': cluster.centroid.tolist()  # Chuyển mảng numpy thành danh sách Python
     }
+
+def show_node_energy(self):
+        sensor_energies = []
+
+        for node in self.listNodes:
+            energy = node.energy/10800
+            sensor_energies.append((node.id, energy))
+        # sensor_energies = [(1, 80), (2, 65), (3, 90), (4, 75), (5, 85), (6, 70)]
+        ids, energies = zip(*sensor_energies)
+        plt.bar(ids, energies)
+        plt.xlabel('ID Cảm biến')
+        plt.ylabel('Mức năng lượng (%)')
+        plt.title('Mức năng lượng của các cảm biến')
+        plt.show()
+    # visualize network
+def visualize_network(self):
+        # Tạo danh sách tọa độ x và y của các mục tiêu
+        x_targets = [target.location[0] for target in self.listTargets]
+        y_targets = [target.location[1] for target in self.listTargets]
+        # Tạo tọa độ x và y của trạm cơ sở
+        x_base_station = 500
+        y_base_station = 500
+        plt.figure(figsize=(10, 8))
+        plt.scatter(x_targets, y_targets, color='red', marker='*', label='Targets')
+        plt.scatter(x_base_station, y_base_station, color='blue', marker='*', s=300, label='Base Station')
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.legend()
+        # plt.grid(True)
+        plt.show()
     

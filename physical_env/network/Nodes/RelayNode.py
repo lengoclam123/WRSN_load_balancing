@@ -1,7 +1,6 @@
-# import Node
-from .Node import Node
+from Node import Node
 
-class InNode(Node):
+class RelayNode(Node):
     def __init__(self, location ,id):
        self.location = location 
        self.id = id
