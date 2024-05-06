@@ -6,6 +6,7 @@ from scipy.spatial.distance import euclidean
 import math
 from scipy.signal import find_peaks
 import json
+import copy
 
 from scipy.spatial import cKDTree
 from itertools import cycle
@@ -20,7 +21,8 @@ from Nodes.SensorNode import SensorNode
 
 # ,OutNode,RelayNode,SensorNode
 from utils.PointBetween import point_between
-
+import warnings
+warnings.filterwarnings("ignore")
 
 class Network:
     def __init__(self, env, baseStation, listTargets, max_time):
@@ -82,8 +84,9 @@ class Network:
 
         gradient = np.gradient(inertias)
         peaks, _ = find_peaks(gradient)
-        # optimal_cluster = peaks[0] + 1
-        optimal_cluster = 19
+        optimal_cluster = peaks[0] + 1
+        #optimal_cluster = 19
+
         
         kmeans = KMeans(optimal_cluster)
         kmeans.fit(listTargetLocation)
@@ -228,20 +231,22 @@ class Network:
             # for cluster in self.listClusters:
             #     cluster.listNodes = [Node1,Node2 , . . . ]
 
+
         com_range =  80
         sen_range =  40
         Cnt_in = [0] * (len(self.listClusters) + 1)
         Cnt_out= [0] * (len(self.listClusters) + 1)
+
         for edge in self.listEdges:
             if(edge[1].__class__.__name__ != "BaseStation"): 
              Cnt_in[edge[1].id] +=1
             Cnt_out[edge[0].id]+=1
         ID = 0
+        xx = 0
         nodeInsideCluster = []
         for cluster in self.listClusters:
             id = cluster.id
-            print(id,Cnt_in[id],Cnt_out[id])
-
+            print(id,cluster.centroid)
             phi = 2 * math.pi / (int) (Cnt_in[id] + Cnt_out[id] + 1)
             alpha = 0
             cnt = 0
@@ -255,6 +260,13 @@ class Network:
                 else: cluster.listNodes.append(OutNode([X,Y],ID))
                 
                 alpha += phi
+            
+
+            # print("count")
+            # if xx>10: 
+            #     print("break")
+            #     break
+            # xx += 1
 
             for i in range(0,len(cluster.listNodes)):
                for j in range(i+1,len(cluster.listNodes)):
@@ -368,7 +380,7 @@ class Network:
             for node in u.listNodes:
                 if(node.__class__.__name__ == "OutNode"):
                       if(cnt == Cnt_out[u.id]):
-                          U = node.location
+                          U = node.location.copy()
                           Cnt_out[u.id] += 1
                           break
                       cnt += 1
@@ -377,7 +389,7 @@ class Network:
              for node in v.listNodes:
                 if(node.__class__.__name__ == "InNode"):
                       if(cnt == Cnt_in[v.id]):
-                          V = node.location
+                          V = node.location.copy()
                           Cnt_in[v.id] += 1 
                           break
                       cnt += 1   
