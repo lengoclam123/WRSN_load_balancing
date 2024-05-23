@@ -1,24 +1,12 @@
 import random
+import simpy
 import numpy as np
 from scipy.spatial.distance import euclidean
 import sys
 import os
 sys.path.append(os.path.dirname(__file__))
 from physical_env.network.Package import Package
-
 import os
-
-# Lấy đường dẫn của thư mục hiện tại
-current_directory = os.getcwd()
-
-# Liệt kê các thư mục trong thư mục hiện tại
-directories = [d for d in os.listdir(current_directory) if os.path.isdir(os.path.join(current_directory, d))]
-
-# In ra danh sách các thư mục
-print("Danh sách các thư mục hiện tại:")
-for directory in directories:
-    print(directory)
-
 
 
 class Node:
@@ -69,7 +57,6 @@ class Node:
         self.probe_neighbors()
         while True:
             self.log_energy = 0
-
             # After 0.5 secs, node begin to calculate its energy and consider transmitting data
             yield self.env.timeout(t * 0.5)
             if self.status == 0:
@@ -104,6 +91,7 @@ class Node:
         self.listTargets.clear()
         for target in self.net.listTargets:
             if euclidean(self.location, target.location) <= self.sen_range:
+                
                 self.listTargets.append(target)
 
     def generate_packages(self):
@@ -116,11 +104,12 @@ class Node:
             receiver = self.find_receiver()
         else:
             receiver = self.net.baseStation
-
         if receiver is not None:
             d = euclidean(self.location, receiver.location)
             e_send = ((self.et + self.efs * d ** 2) if d <= d0
                       else (self.et + self.emp * d ** 4)) * package.package_size
+            
+            
             if self.energy - self.threshold < e_send:
                 self.energy = self.threshold
             else:

@@ -1,18 +1,29 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from physical_env.network.NetworkIO import NetworkIO
+import matplotlib.pyplot as plt
+import numpy as np
+from moviepy.editor import ImageSequenceClip
+from IPython.display import Video, display
 
+# Tạo danh sách để lưu tên các tệp hình ảnh
+image_files = []
 
-netIO = NetworkIO("physical_env/network/network_scenarios/bacgiang_150.yaml")
-env, net = netIO.makeNetwork()
+# Tạo và lưu các plot
+for i in range(10):
+    x = np.linspace(0, 2 * np.pi, 100)
+    y = np.sin(x + i * 0.1)
+    
+    plt.figure()
+    plt.plot(x, y)
+    filename = f'plot_{i}.png'
+    plt.savefig(filename)
+    image_files.append(filename)
+    plt.close()
 
+# Đọc các hình ảnh và tạo video
+clip = ImageSequenceClip(image_files, fps=2)  # fps là số khung hình trên giây
 
+# Lưu video
+video_file = 'plots_video.mp4'
+clip.write_videofile(video_file, codec='libx264')
 
-# import sys
-# import os
-# sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
-# from physical_env.network.Nodes.InNode import InNode
-
-# InNode([1,2],1)
+# Hiển thị video trong Jupyter Notebook
+display(Video(video_file))

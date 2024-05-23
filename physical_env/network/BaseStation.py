@@ -9,7 +9,7 @@ class BaseStation:
         """
         # controlling timeline
         self.env = None
-
+        self.id = 0
         # include all components in our network
         self.net = None
 
@@ -18,6 +18,7 @@ class BaseStation:
         self.direct_nodes = []
 
     def probe_neighbors(self):
+        self.direct_nodes.clear()
         for node in self.net.listNodes:
             if euclidean(self.location, node.location) <= node.com_range:
                 self.direct_nodes.append(node)

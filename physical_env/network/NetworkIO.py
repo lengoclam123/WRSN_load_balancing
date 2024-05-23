@@ -12,6 +12,7 @@ from Network import Network
 from physical_env.network.Nodes.Node import Node
 from Target import Target
 
+
 class NetworkIO:
     def __init__(self, file_data):
         with open(file_data, 'r') as file:
@@ -27,14 +28,16 @@ class NetworkIO:
         listTargets = []
         for tmp in net_argc["nodes"]:
             listNodes.append(Node(location=tmp, phy_spe=copy.deepcopy(self.node_phy_spe)))
+        ID = -1
         for  tmp in self.net_argc["targets"]:
-            listTargets.append(Target(location=tmp))
+            ID +=1
+            listTargets.append(Target(location=tmp,id = ID))
 
         baseStation = BaseStation(location=net_argc["base_station"])
         # with open("listTargets.json", "w") as output_file:
         #     json.dump(listTargets, output_file)
-  
         env = simpy.Environment()
-        return env, Network(env, baseStation, listTargets, net_argc["max_time"])
+        #net = Network(env, baseStation, listTargets, net_argc["max_time"],phy=copy.deepcopy(self.node_phy_spe)) 
 
- 
+        return env, Network(env, baseStation, listTargets, net_argc["max_time"],phy=copy.deepcopy(self.node_phy_spe)) 
+
