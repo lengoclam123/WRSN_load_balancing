@@ -11,7 +11,7 @@ class ConnectorNode(Node):
         node_min = None
         for node in self.neighbors:
             name = node.__class__.__name__
-            if(name == "ConnectorNode" or name == "InNode" or name == "OutNode"):
+            if(name == "ConnectorNode" or name == "InNode" or name == "OutNode") and self.cluster_id == node.cluster_id and self.level > node.level:
                 distance =  euclidean(node.location, self.net.listClusters[self.cluster_id].centroid)
                 if distance < distance_min:
                     node_min = node

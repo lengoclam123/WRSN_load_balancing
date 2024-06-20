@@ -11,9 +11,14 @@ def log(net, mcs):
         yield net.env.timeout(1.0)
 
 
+
 netIO = NetworkIO("physical_env/network/network_scenarios/bacgiang_150.yaml")
 env, net = netIO.makeNetwork()
 
+for node in net.listNodes:
+    node.net = net
+    node.env = env
+    
 x = env.process(net.operate())
 env.process(log(net, None))
 

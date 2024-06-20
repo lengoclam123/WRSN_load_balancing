@@ -9,7 +9,7 @@ class RelayNode(Node):
        self.end = end
     def find_receiver(self): # define outnode
         for node in self.neighbors:
-            if(node.__class__.__name__ == "RelayNode"):
+            if(node.__class__.__name__ == "RelayNode") and self.level > node.level:
               if(self.start.id == node.start.id and self.end.id == node.end.id):
                 Location_end = self.net.baseStation.location
                 if self.end.__class__.__name__ == "BaseStation":
@@ -21,7 +21,7 @@ class RelayNode(Node):
                 if distance_1 < distance_2:
                     return node
         for node in self.neighbors:
-            if(node.__class__.__name__ == "InNode"):
+            if(node.__class__.__name__ == "InNode") and self.level > node.level:
                 if(node.cluster_id == self.end.id):
                  return node
         pass

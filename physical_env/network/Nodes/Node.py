@@ -116,7 +116,11 @@ class Node:
                 self.energy -= e_send
                 receiver.receive_package(package) #
                 self.log_energy += e_send
+        # else: 
+        #     print(self.location)
+        # print(self.id,receiver.id,self.location)
         self.check_status()
+
 
     def find_receiver(self):
         pass

@@ -9,6 +9,6 @@ class InNode(Node):
        self.cluster_id = 0
     def find_receiver(self): # define outnode
         for node in self.neighbors: 
-            if(node.__class__.__name__ == "OutNode"):
+            if(node.__class__.__name__ == "OutNode") and self.level > node.level:
                 return node
         pass
