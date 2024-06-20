@@ -1,4 +1,4 @@
-Wireless Sensor Network Load Balancing Project
+Wireless Sensor Network Load Balancing Project\\
 Introduction
     This project aims to implement load balancing in a wireless sensor network (WSN) with wireless charging capabilities using Python and object-oriented programming principles. The project focuses on optimizing energy consumption and ensuring efficient load distribution among the sensor nodes.
 Installation
