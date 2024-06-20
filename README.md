@@ -1,6 +1,4 @@
-Dưới đây là phiên bản định dạng lại của README cho dự án trên GitHub:
 
----
 
 # Wireless Sensor Network Load Balancing Project
 
